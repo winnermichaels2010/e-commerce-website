@@ -2,14 +2,13 @@ import { useState } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { FiMail, FiLock } from 'react-icons/fi';
-import { FcGoogle } from 'react-icons/fc';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, user, signInWithGoogle } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already logged in
@@ -49,31 +48,6 @@ export default function Login() {
           break;
         default:
           setError(err.message || 'Login failed');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleGoogleSignIn() {
-    setError('');
-    setLoading(true);
-    try {
-      await signInWithGoogle();
-      navigate('/dashboard', { replace: true });
-    } catch (err) {
-      switch (err.code) {
-        case 'auth/popup-closed-by-user':
-          setError('Sign-in popup was closed');
-          break;
-        case 'auth/popup-blocked':
-          setError('Sign-in popup was blocked. Please check your browser settings');
-          break;
-        case 'auth/operation-not-supported-in-this-environment':
-          setError('Google Sign-In is not supported in this environment');
-          break;
-        default:
-          setError(err.message || 'Google Sign-In failed');
       }
     } finally {
       setLoading(false);
@@ -176,32 +150,6 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-
-        <div className="mt-6 relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t" style={{ borderColor: 'var(--border-color)' }}></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-secondary)' }}>
-              Or continue with
-            </span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGoogleSignIn}
-          disabled={loading}
-          className="w-full mt-6 py-3 px-4 font-semibold rounded-lg transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 border"
-          style={{
-            backgroundColor: 'var(--bg-primary)',
-            borderColor: 'var(--border-color)',
-            color: 'var(--text-primary)',
-          }}
-        >
-          <FcGoogle size={20} />
-          Sign in with Google
-        </button>
 
         <p className="mt-6 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
           Don't have an account?{' '}

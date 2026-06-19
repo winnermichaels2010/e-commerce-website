@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiSearch, FiDroplet, FiWind, FiClock, FiThermometer } from 'react-icons/fi';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -313,16 +313,6 @@ export default function Home() {
             ))}
           </div>
         </div>
-      )}
-
-      {/* Prompt to sign in for history */}
-      {!user && (
-        <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-          <a href="/login" style={{ color: 'var(--accent-purple)' }} className="underline">
-            Sign in
-          </a>{' '}
-          to save your weather search history
-        </p>
       )}
 
       {/* Floating search icon button */}
