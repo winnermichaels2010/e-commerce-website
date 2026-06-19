@@ -29,7 +29,6 @@ async function geocodeCity(cityName) {
     throw new Error(`Failed to geocode city: ${error.message}`);
   }
 }
-
 // Get weather data from Open-Meteo API
 async function getWeatherByCoordinates(latitude, longitude) {
   try {
