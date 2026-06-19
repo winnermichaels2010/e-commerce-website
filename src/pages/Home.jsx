@@ -6,7 +6,20 @@ import { db } from '../firebase';
 import { useAuth } from '../auth/AuthContext';
 import { getWeatherByCity } from '../services/weatherService';
 
-const popularCities = ['New York', 'London', 'Tokyo', 'Sydney', 'Paris', 'Cape Town'];
+// Extended list of cities for random selection
+const allCities = [
+  'New York', 'London', 'Tokyo', 'Sydney', 'Paris', 'Cape Town',
+  'Dubai', 'Singapore', 'Hong Kong', 'Bangkok', 'Barcelona', 'Amsterdam',
+  'Toronto', 'Mexico City', 'São Paulo', 'Mumbai', 'Delhi', 'Istanbul',
+  'Moscow', 'Beijing', 'Shanghai', 'Seoul', 'Los Angeles', 'Chicago',
+  'Berlin', 'Rome', 'Madrid', 'Vienna', 'Prague', 'Stockholm'
+];
+
+// Function to get random cities
+function getRandomCities(count = 6) {
+  const shuffled = [...allCities].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+}
 
 export default function Home() {
   const navigate = useNavigate();
@@ -17,6 +30,8 @@ export default function Home() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [randomCities] = useState(() => getRandomCities());
 
   // Load weather history from Firestore if logged in
   useEffect(() => {
@@ -42,7 +57,7 @@ export default function Home() {
     async function loadPopularWeather() {
       try {
         const popularResults = await Promise.all(
-          popularCities.map(async (cityName) => {
+          randomCities.map(async (cityName) => {
             const weatherData = await getWeatherByCity(cityName);
             return weatherData;
           })
@@ -54,7 +69,7 @@ export default function Home() {
     }
 
     loadPopularWeather();
-  }, []);
+  }, [randomCities]);
 
   async function searchWeather(e) {
     e.preventDefault();
@@ -89,9 +104,56 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="space-y-8">
+      {/* Sticky Search Bar at Top */}
+      <div className={`${showSearch ? 'block' : 'hidden'} sticky top-0 z-50 bg-gradient-to-b from-opacity-100 to-opacity-0 pb-4`} style={{ background: 'var(--bg-primary)' }}>
+        <form onSubmit={searchWeather} className="flex gap-2">
+          <div className="relative flex-1">
+            <FiSearch
+              className="absolute left-4 top-1/2 -translate-y-1/2"
+              size={18}
+              style={{ color: 'var(--text-secondary)' }}
+            />
+            <input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Enter city name (e.g., London, Tokyo, New York)"
+              className="w-full pl-12 pr-4 py-3 rounded-xl text-sm outline-none border transition-all"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'var(--border-color)',
+                color: 'var(--text-primary)',
+              }}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className=" cursor-pointer px-6 py-3 rounded-xl text-white font-medium text-sm transition-all disabled:opacity-50"
+            style={{ background: 'var(--accent-purple)' }}
+          >
+            {loading ? 'Searching...' : 'Search'}
+          </button>
+        </form>
+
+        {/* Error message below search */}
+        {error && (
+          <div
+            className="p-4 rounded-xl text-sm mt-3"
+            style={{
+              backgroundColor: '#fef2f2',
+              color: '#dc2626',
+              border: '1px solid #fecaca',
+            }}
+          >
+            {error}
+          </div>
+        )}
+      </div>
+
       {/* Hero section */}
-      <div className="text-center space-y-4">
+      <div className="max-w-3xl mx-auto text-center space-y-4">
         <h1 className="text-4xl md:text-5xl font-bold" style={{ color: 'var(--text-primary)' }}>
           Weather <span style={{ color: 'var(--accent-purple)' }}>Forecast</span>
         </h1>
@@ -100,8 +162,21 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Popular places */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="max-w-3xl mx-auto space-y-8">
+        <div className="space-y-3">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--accent-purple)' }}>
+            Today’s weather highlights
+          </p>
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            Random cities on refresh
+          </h2>
+          {popularWeather.length === 0 && !error && (
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              Loading fresh weather data for random cities...
+            </p>
+          )}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {popularWeather.map((place) => (
           <div
             key={`${place.city}-${place.country}`}
@@ -135,51 +210,6 @@ export default function Home() {
           </div>
         ))}
       </div>
-
-      {/* Search form */}
-      <form onSubmit={searchWeather} className="flex gap-2">
-        <div className="relative flex-1">
-          <FiSearch
-            className="absolute left-4 top-1/2 -translate-y-1/2"
-            size={18}
-            style={{ color: 'var(--text-secondary)' }}
-          />
-          <input
-            type="text"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            placeholder="Enter city name (e.g., London, Tokyo, New York)"
-            className="w-full pl-12 pr-4 py-3 rounded-xl text-sm outline-none border transition-all"
-            style={{
-              backgroundColor: 'var(--bg-card)',
-              borderColor: 'var(--border-color)',
-              color: 'var(--text-primary)',
-            }}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className=" cursor-pointer px-6 py-3 rounded-xl text-white font-medium text-sm transition-all disabled:opacity-50"
-          style={{ background: 'var(--accent-purple)' }}
-        >
-          {loading ? 'Searching...' : 'Search'}
-        </button>
-      </form>
-
-      {/* Error message */}
-      {error && (
-        <div
-          className="p-4 rounded-xl text-sm"
-          style={{
-            backgroundColor: '#fef2f2',
-            color: '#dc2626',
-            border: '1px solid #fecaca',
-          }}
-        >
-          {error}
-        </div>
-      )}
 
       {/* Weather display */}
       {weather && (
@@ -294,6 +324,18 @@ export default function Home() {
           to save your weather search history
         </p>
       )}
+
+      {/* Floating search icon button */}
+      <button
+        type="button"
+        onClick={() => setShowSearch((prev) => !prev)}
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-pink-500 text-white shadow-2xl shadow-violet-500/20 transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-violet-300"
+        style={{ animation: 'vibrate 1s infinite' }}
+        aria-label={showSearch ? 'Hide search' : 'Open search'}
+      >
+        <FiSearch size={24} />
+      </button>
+      </div>
     </div>
   );
 }
