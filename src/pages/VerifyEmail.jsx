@@ -37,10 +37,10 @@ export default function VerifyEmail() {
     setResending(true);
     setMessage('');
     try {
-      await sendVerification();
+      await sendVerification(user);
       setMessage('Verification email sent! Check your inbox.');
     } catch (err) {
-      setMessage('Failed to send. Please try again later.');
+      setMessage(err.message || 'Failed to send. Please try again later.');
     } finally {
       setResending(false);
     }

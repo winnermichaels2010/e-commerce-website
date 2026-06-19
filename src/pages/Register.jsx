@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { FiMail, FiLock } from 'react-icons/fi';
+import { FcGoogle } from 'react-icons/fc';
 
 export default function Register() {
   const [email, setEmail] = useState('');
@@ -9,15 +10,11 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register, sendVerification, user } = useAuth();
+  const { register, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
 
-  // If already logged in
   if (user) {
-    if (user.emailVerified) {
-      return <Navigate to="/dashboard" replace />;
-    }
-    return <Navigate to="/verify-email" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   async function handleSubmit(e) {
@@ -42,8 +39,7 @@ export default function Register() {
     setLoading(true);
     try {
       await register(email, password);
-      await sendVerification();
-      navigate('/verify-email', { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       switch (err.code) {
         case 'auth/email-already-in-use':
@@ -63,9 +59,34 @@ export default function Register() {
     }
   }
 
+  async function handleGoogleSignIn() {
+    setError('');
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+      navigate('/dashboard', { replace: true });
+    } catch (err) {
+      switch (err.code) {
+        case 'auth/popup-closed-by-user':
+          setError('Sign-in popup was closed');
+          break;
+        case 'auth/popup-blocked':
+          setError('Sign-in popup was blocked. Please check your browser settings');
+          break;
+        case 'auth/operation-not-supported-in-this-environment':
+          setError('Google Sign-In is not supported in this environment');
+          break;
+        default:
+          setError(err.message || 'Google Sign-In failed');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
+      className="flex-1 flex items-center justify-center p-4"
       style={{
         background: 'linear-gradient(135deg, var(--bg-primary), var(--bg-secondary))',
       }}
@@ -175,15 +196,41 @@ export default function Register() {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 px-4 text-white font-semibold rounded-lg transition-all duration-300 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))' }}
-          >
-            {loading ? 'Creating account...' : 'Create Account'}
-          </button>
-        </form>
+        <div className="mt-6 relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t" style={{ borderColor: 'var(--border-color)' }}></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2" style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-secondary)' }}>
+              Or continue with
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={loading}
+          className="w-full mt-6 py-3 px-4 font-semibold rounded-lg transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 border"
+          style={{
+            backgroundColor: 'var(--bg-primary)',
+            borderColor: 'var(--border-color)',
+            color: 'var(--text-primary)',
+          }}
+        >
+          <FcGoogle size={20} />
+          Create account with Google
+        </button>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full mt-4 py-3 px-4 text-white font-semibold rounded-lg transition-all duration-300 disabled:opacity-50"
+          style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-pink))' }}
+        >
+          {loading ? 'Creating account...' : 'Create Account'}
+        </button>
+      </form>
 
         <p className="mt-6 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
           Already have an account?{' '}

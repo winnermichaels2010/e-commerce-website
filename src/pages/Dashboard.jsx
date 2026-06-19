@@ -158,12 +158,8 @@ export default function Dashboard() {
               }}
             >
               <div className="flex items-center gap-4 flex-1 min-w-0">
-                {/* Weather icon */}
-                <img
-                  src={`https://openweathermap.org/img/wn/${item.icon}@2x.png`}
-                  alt=""
-                  className="w-12 h-12 shrink-0"
-                />
+                {/* Weather emoji */}
+                <span className="text-4xl shrink-0">{item.emoji}</span>
 
                 {/* City info */}
                 <div className="min-w-0">
@@ -187,7 +183,7 @@ export default function Dashboard() {
                   </span>
                   <span className="flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
                     <FiWind size={14} style={{ color: 'var(--accent-purple)' }} />
-                    {item.windSpeed} m/s
+                    {item.windSpeed} km/h
                   </span>
                 </div>
 

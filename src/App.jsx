@@ -4,7 +4,6 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -37,12 +36,11 @@ function AppRoutes() {
         }
       />
 
-      {/* Auth routes - without Layout, standalone pages */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/verify-email" element={<VerifyEmail />} />
+      {/* Auth routes - with Layout for consistent navbar/footer */}
+      <Route path="/login" element={<Layout><Login /></Layout>} />
+      <Route path="/register" element={<Layout><Register /></Layout>} />
 
-      {/* Protected routes - require auth + email verification */}
+      {/* Protected routes - require auth */}
       <Route
         path="/dashboard"
         element={

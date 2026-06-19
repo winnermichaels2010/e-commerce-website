@@ -5,8 +5,9 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   sendEmailVerification,
+  signInWithPopup,
 } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth, googleProvider } from '../firebase';
 
 const AuthContext = createContext(null);
 
@@ -30,15 +31,19 @@ export function AuthProvider({ children }) {
     return createUserWithEmailAndPassword(auth, email, password);
   }
 
-  function sendVerification() {
-    if (auth.currentUser) {
-      return sendEmailVerification(auth.currentUser);
+  function sendVerification(userToVerify = auth.currentUser) {
+    if (userToVerify) {
+      return sendEmailVerification(userToVerify);
     }
     return Promise.reject(new Error('No user logged in'));
   }
 
   function logout() {
     return signOut(auth);
+  }
+
+  function signInWithGoogle() {
+    return signInWithPopup(auth, googleProvider);
   }
 
   const value = {
@@ -48,6 +53,7 @@ export function AuthProvider({ children }) {
     register,
     logout,
     sendVerification,
+    signInWithGoogle,
     isAuthenticated: !!user,
   };
 

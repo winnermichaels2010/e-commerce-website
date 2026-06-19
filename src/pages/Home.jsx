@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
-import { FiSearch, FiDroplet, FiWind, FiClock } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiSearch, FiDroplet, FiWind, FiClock, FiThermometer } from 'react-icons/fi';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../auth/AuthContext';
+import { getWeatherByCity } from '../services/weatherService';
 
-const API_KEY = import.meta.env.VITE_WEATHER_API_KEY;
-const BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
+const popularCities = ['New York', 'London', 'Tokyo', 'Sydney', 'Paris', 'Cape Town'];
 
 export default function Home() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [city, setCity] = useState('');
   const [weather, setWeather] = useState(null);
+  const [popularWeather, setPopularWeather] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
@@ -35,38 +38,38 @@ export default function Home() {
     return unsubscribe;
   }, [user]);
 
+  useEffect(() => {
+    async function loadPopularWeather() {
+      try {
+        const popularResults = await Promise.all(
+          popularCities.map(async (cityName) => {
+            const weatherData = await getWeatherByCity(cityName);
+            return weatherData;
+          })
+        );
+        setPopularWeather(popularResults);
+      } catch (err) {
+        console.error('Failed to load popular weather:', err);
+      }
+    }
+
+    loadPopularWeather();
+  }, []);
+
   async function searchWeather(e) {
     e.preventDefault();
     if (!city.trim()) return;
+
+    if (!user) {
+      navigate('/login');
+      return;
+    }
 
     setError('');
     setLoading(true);
 
     try {
-      const res = await fetch(
-        `${BASE_URL}?q=${encodeURIComponent(city.trim())}&appid=${API_KEY}&units=metric`
-      );
-      const data = await res.json();
-
-      if (data.cod !== 200) {
-        setError(data.message || 'City not found');
-        setWeather(null);
-        setLoading(false);
-        return;
-      }
-
-      const weatherData = {
-        city: data.name,
-        country: data.sys.country,
-        temperature: Math.round(data.main.temp),
-        feelsLike: Math.round(data.main.feels_like),
-        description: data.weather[0].description,
-        icon: data.weather[0].icon,
-        humidity: data.main.humidity,
-        windSpeed: data.wind.speed,
-        tempMin: Math.round(data.main.temp_min),
-        tempMax: Math.round(data.main.temp_max),
-      };
+      const weatherData = await getWeatherByCity(city.trim());
 
       setWeather(weatherData);
 
@@ -78,7 +81,7 @@ export default function Home() {
         });
       }
     } catch (err) {
-      setError('Failed to fetch weather data. Check your API key.');
+      setError(err.message || 'Failed to fetch weather data.');
       setWeather(null);
     } finally {
       setLoading(false);
@@ -95,6 +98,42 @@ export default function Home() {
         <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
           Search for any city to get current weather conditions
         </p>
+      </div>
+
+      {/* Popular places */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {popularWeather.map((place) => (
+          <div
+            key={`${place.city}-${place.country}`}
+            className="rounded-2xl p-5 border"
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderColor: 'var(--border-color)',
+            }}
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-lg" style={{ color: 'var(--text-primary)' }}>
+                  {place.city}, {place.country}
+                </h3>
+                <p className="text-sm capitalize" style={{ color: 'var(--text-secondary)' }}>
+                  {place.description}
+                </p>
+              </div>
+              <span className="text-4xl">{place.emoji}</span>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Temp</p>
+                <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{place.temperature}°C</p>
+              </div>
+              <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Humidity</p>
+                <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{place.humidity}%</p>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Search form */}
@@ -168,17 +207,13 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Weather icon */}
-          <div className="flex justify-center">
-            <img
-              src={`https://openweathermap.org/img/wn/${weather.icon}@4x.png`}
-              alt={weather.description}
-              className="w-24 h-24"
-            />
+          {/* Weather emoji icon */}
+          <div className="flex justify-center text-6xl">
+            {weather.emoji}
           </div>
 
           {/* Details grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div
               className="p-4 rounded-xl text-center"
               style={{ backgroundColor: 'var(--bg-secondary)' }}
@@ -193,28 +228,17 @@ export default function Home() {
             >
               <FiWind className="mx-auto mb-1" size={20} style={{ color: 'var(--accent-purple)' }} />
               <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Wind Speed</p>
-              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{weather.windSpeed} m/s</p>
+              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{weather.windSpeed} km/h</p>
             </div>
             <div
               className="p-4 rounded-xl text-center"
               style={{ backgroundColor: 'var(--bg-secondary)' }}
             >
-              <p className="text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Min Temp</p>
-              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{weather.tempMin}°C</p>
-            </div>
-            <div
-              className="p-4 rounded-xl text-center"
-              style={{ backgroundColor: 'var(--bg-secondary)' }}
-            >
-              <p className="text-xs mb-1" style={{ color: 'var(--text-secondary)' }}>Max Temp</p>
-              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{weather.tempMax}°C</p>
+              <FiThermometer className="mx-auto mb-1" size={20} style={{ color: 'var(--accent-purple)' }} />
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Feels Like</p>
+              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{weather.feelsLike}°C</p>
             </div>
           </div>
-
-          {/* Feels like */}
-          <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Feels like <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{weather.feelsLike}°C</span>
-          </p>
         </div>
       )}
 
@@ -242,11 +266,7 @@ export default function Home() {
                 style={{ backgroundColor: 'var(--bg-secondary)' }}
               >
                 <div className="flex items-center gap-3">
-                  <img
-                    src={`https://openweathermap.org/img/wn/${item.icon}.png`}
-                    alt=""
-                    className="w-8 h-8"
-                  />
+                  <span className="text-2xl">{item.emoji}</span>
                   <div>
                     <p className="font-medium" style={{ color: 'var(--text-primary)' }}>
                       {item.city}, {item.country}
